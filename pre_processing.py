@@ -9,11 +9,12 @@ from os.path import isfile, join
 from imutils import paths
 
 
-path_source = sorted(list(paths.list_images("'source_datum'")))
+path_source = sorted(list(paths.list_images("source_datum")))
 
-path_handling = sorted(list(paths.list_images("'manual_handling'")))
+path_handling = sorted(list(paths.list_images("manual_handling")))
 
 path_result = sorted(list(paths.list_images("result_segment")))
+
 
 data = []
 
@@ -22,7 +23,7 @@ hand = []
 
 def rename(path_source, path_handling):
 
-    only_source = [f for f in listdir(path_source) if isfile(join(path_source, f))]
+    only_source = [f for f in (path_source) if (join(path_source, f))]
     only_handling = [f for f in listdir(path_handling) if isfile(join(path_handling, f))]
 
     for filename in only_source:
@@ -37,34 +38,40 @@ def rename(path_source, path_handling):
 
     return path_handling, path_source
 
+rename(path_handling, path_source)
 
-def predata(path_source, path_handling, data, hand):
+#def predata(path_source, path_handling, data, hand):
+image = np.empty(len(path_handling), dtype=object)
 
-    for item in path_source:
+for item in range(0, len(only_source)):
 
-        image = cv2.imread(item, cv2.IMREAD_GRAYSCALE)
-        image = image / 255.
-        image = cv2.resize(image, (84, 84))
-        data.append(image)
+    image[item] = cv2.imread(join(path_handling, only_source[item]))
+    gray = cv2.cvtColor(image[item], cv2.COLOR_BGR2GRAY)
 
-    for path in path_handling:
+    cv2.imshow('dfghjk', gray)
+    image = image / 255.
+    image = cv2.resize(image, (84, 84))
+    data.append(image)
+    print(path_source)
 
-        neoplasm = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
-        neoplasm = neoplasm / 255.
-        neoplasm = cv2.resize(neoplasm, (84, 84))
-        height, width = neoplasm.shape
+for path in (path_handling):
 
-        for x in range(0, width):
+    neoplasm = cv2.imread(path, cv2.IMREAD_COLOR)
+    neoplasm = neoplasm / 255.
+    neoplasm = cv2.resize(neoplasm, (84, 84))
+    height, width = neoplasm.shape
 
-            for y in range(0, height):
+    for x in range(0, width):
 
-                if neoplasm[x, y, 0] != 0 and neoplasm[x, y, 1] != 0 and neoplasm[x, y, 2] != 0:
+        for y in range(0, height):
 
-                    neoplasm[x, y, 0] = 255
-                    neoplasm[x, y, 1] = 255
-                    neoplasm[x, y, 2] = 255
+            if neoplasm[x, y, 0] != 0 and neoplasm[x, y, 1] != 0 and neoplasm[x, y, 2] != 0:
 
-        hand.append(neoplasm)
+                neoplasm[x, y, 0] = 255
+                neoplasm[x, y, 1] = 255
+                neoplasm[x, y, 2] = 255
 
-    return hand, data
+    hand.append(neoplasm)
+
+    #return hand, data
 
