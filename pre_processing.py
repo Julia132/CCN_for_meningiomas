@@ -1,77 +1,95 @@
 import cv2
 import numpy as np
-import csv
-import math
 import os
 
 from os import listdir
 from os.path import isfile, join
-from imutils import paths
+
+path_source = "source_datum"
+
+path_handling = "manual_handling"
+
+path_result_input = "result_segment_input"
+
+path_result_output = 'result_segment_output'
 
 
-path_source = sorted(list(paths.list_images("source_datum")))
+def rename(*args):
 
-path_handling = sorted(list(paths.list_images("manual_handling")))
+    for dir_name in args:
 
-path_result = sorted(list(paths.list_images("result_segment")))
+        for filename in [f for f in listdir(dir_name) if isfile(join(dir_name, f))]:
+
+            os.rename(
+                os.path.join(dir_name, filename), os.path.join(dir_name, filename.replace(' ', '_').replace(',', '.'))
+            )
 
 
-data = []
+def predata(path_input, path_output):
 
-hand = []
+    for filename in [f for f in listdir(path_input) if isfile(join(path_input, f))]:
+
+        image = cv2.imread(join(path_input, filename))
+
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        image = cv2.resize(image, (64, 64))
+
+        cv2.imwrite(join(path_output, filename), image)
 
 
-def rename(path_source, path_handling):
+def change_color(dir_name):
 
-    only_source = [f for f in (path_source) if (join(path_source, f))]
-    only_handling = [f for f in listdir(path_handling) if isfile(join(path_handling, f))]
+    for filename in [f for f in listdir(dir_name) if isfile(join(dir_name, f))]:
 
-    for filename in only_source:
+        neoplasm = cv2.imread(join(dir_name, filename))
+        R = np.mean(neoplasm)
 
-        os.rename(os.path.join(path_source, filename), os.path.join(path_source, filename.replace(' ', '_')))
-        os.rename(os.path.join(path_source, filename), os.path.join(path_source, filename.replace(',', '.')))
+        if R >= 127:
 
-    for filename in only_handling:
+            neoplasm = 255 - neoplasm
 
-        os.rename(os.path.join(path_handling, filename), os.path.join(path_handling, filename.replace(' ', '_')))
-        os.rename(os.path.join(path_handling, filename), os.path.join(path_handling, filename.replace(',', '.')))
+        thresh, neoplasm = cv2.threshold(neoplasm.astype(np.uint8), 10, 255, cv2.THRESH_BINARY)
 
-    return path_handling, path_source
+        cv2.imwrite(join(dir_name, filename), neoplasm)
 
-rename(path_handling, path_source)
 
-#def predata(path_source, path_handling, data, hand):
-image = np.empty(len(path_handling), dtype=object)
+def get_image(dir_input, dir_output):
 
-for item in range(0, len(only_source)):
+    data = []
 
-    image[item] = cv2.imread(join(path_handling, only_source[item]))
-    gray = cv2.cvtColor(image[item], cv2.COLOR_BGR2GRAY)
+    hand = []
 
-    cv2.imshow('dfghjk', gray)
-    image = image / 255.
-    image = cv2.resize(image, (84, 84))
-    data.append(image)
-    print(path_source)
+    for filename in [f for f in listdir(dir_input) if isfile(join(dir_input, f))]:
 
-for path in (path_handling):
+        image = cv2.imread(join(dir_input, filename))
 
-    neoplasm = cv2.imread(path, cv2.IMREAD_COLOR)
-    neoplasm = neoplasm / 255.
-    neoplasm = cv2.resize(neoplasm, (84, 84))
-    height, width = neoplasm.shape
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-    for x in range(0, width):
+        image = image / 255.
 
-        for y in range(0, height):
+        data.append(image)
 
-            if neoplasm[x, y, 0] != 0 and neoplasm[x, y, 1] != 0 and neoplasm[x, y, 2] != 0:
+    for filename in [f for f in listdir(dir_output) if isfile(join(dir_output, f))]:
 
-                neoplasm[x, y, 0] = 255
-                neoplasm[x, y, 1] = 255
-                neoplasm[x, y, 2] = 255
+        image = cv2.imread(join(dir_output, filename))
 
-    hand.append(neoplasm)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-    #return hand, data
+        image = image / 255.
+
+        hand.append(image)
+
+    return data, hand
+
+
+def main():
+    rename(path_handling, path_source)
+    predata(path_handling, path_result_output)
+    predata(path_source, path_result_input)
+    change_color(path_result_output)
+
+
+if __name__ == "__main__":
+    main()
 
